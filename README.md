@@ -1,14 +1,17 @@
-# Git Commit Message Generator
+# CommitGen - AI-Powered Git Commit Message Generator
 
-A smart Git commit message generator powered by Google's Gemini AI that analyzes your staged changes and recent commit history to create well-formatted, conventional commit messages.
+A **core library** and CLI tool for generating intelligent Git commit messages using Google's Gemini AI. Designed to be integrated into various tools like Lazygit, Neovim, VS Code, or used standalone.
 
 ## Features
 
 - 🤖 **AI-Powered Analysis**: Uses Google Gemini to understand your code changes
+- 📦 **Core Library**: Clean Go package that can be integrated into any application
+- 🔌 **Multiple Integrations**: CLI tool, IDE plugins, git hooks, or custom applications
 - 📝 **Conventional Commits**: Generates properly formatted commit messages following industry standards
 - 🔍 **Context Aware**: Analyzes both your diff and recent git history for consistent style
-- ⚡ **Fast & Lightweight**: Simple Go binary with minimal dependencies
+- ⚡ **Fast & Lightweight**: Minimal dependencies and clean architecture
 - 🎯 **Detailed Messages**: Creates both concise subject lines and informative commit bodies
+- 🛠️ **Configurable**: Custom prompts, models, and working directories
 
 ## How It Works
 
@@ -95,18 +98,77 @@ The new system provides better scalability and follows industry
 best practices for API authentication.
 ```
 
-### Integration Ideas
+### Using as a Library
 
-**Git Alias** (recommended):
+```go
+package main
+
+import (
+    "fmt"
+    "log"
+    "github.com/nguyenanhhao221/go-google-ai/pkg/commitgen"
+)
+
+func main() {
+    // Simple usage
+    message, err := commitgen.QuickGenerate("your-api-key")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(message)
+    
+    // Advanced usage
+    commitGen, err := commitgen.New(&commitgen.Options{
+        APIKey:       "your-api-key",
+        WorkingDir:   "/path/to/repo",
+        Model:        "gemini-1.5-pro",
+        CustomPrompt: "Your custom prompt here",
+    })
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer commitGen.Close()
+    
+    message, err = commitGen.Generate()
+    // ... use message
+}
+```
+
+### Integration Examples
+
+**Lazygit Custom Command**:
+
+```yaml
+# ~/.config/lazygit/config.yml
+customCommands:
+  - key: 'C'
+    command: 'your-binary-path'
+    description: 'Generate AI commit message'
+    context: 'files'
+```
+
+**Neovim Lua Plugin**:
+
+```lua
+-- Add to your Neovim config
+local function generate_commit_message()
+  local handle = io.popen('your-binary-path')
+  local result = handle:read("*a")
+  handle:close()
+  vim.api.nvim_put({result}, "l", true, true)
+end
+
+vim.keymap.set('n', '<leader>gc', generate_commit_message)
+```
+
+**Git Alias** (CLI):
 
 ```bash
-git config --global alias.smart-commit '!git commit -m "$(./commit-gen)"'
+git config --global alias.smart-commit '!git commit -m "$(commit-gen)"'
 # Usage: git smart-commit
 ```
 
 **Git Hook**: Add to `.git/hooks/prepare-commit-msg` for automatic suggestions
-
-**IDE Integration**: Use as external tool in VS Code, IntelliJ, etc.
 
 ## Configuration
 
