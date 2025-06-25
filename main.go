@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -16,8 +17,12 @@ func main() {
 		log.Println("Warning: Error loading .env file, using system environment")
 	}
 
+	shortCommit := flag.Bool("short", false, "Just generate short commit title")
+	flag.Parse()
+
 	// Create commit generator
 	commitGen, err := commitgen.New(&commitgen.Options{
+		IsShortCommit: *shortCommit,
 		// API key will be loaded from GOOGLE_API_KEY environment variable
 		// WorkingDir defaults to current directory
 	})

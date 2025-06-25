@@ -10,9 +10,10 @@ import (
 
 // CommitMessageGenerator handles AI-powered commit message generation
 type CommitMessageGenerator struct {
-	client       *genai.Client
-	config       *GeneratorConfig
-	systemPrompt string
+	client        *genai.Client
+	config        *GeneratorConfig
+	systemPrompt  string
+	isShortCommit bool
 }
 
 // GeneratorConfig contains configuration for the commit message generator
@@ -31,7 +32,7 @@ func DefaultConfig() *GeneratorConfig {
 }
 
 // NewCommitMessageGenerator creates a new commit message generator
-func NewCommitMessageGenerator(config *GeneratorConfig) (*CommitMessageGenerator, error) {
+func NewCommitMessageGenerator(config *GeneratorConfig, isShortCommit bool) (*CommitMessageGenerator, error) {
 	if config.APIKey == "" {
 		return nil, fmt.Errorf("API key is required")
 	}
@@ -47,10 +48,18 @@ func NewCommitMessageGenerator(config *GeneratorConfig) (*CommitMessageGenerator
 		return nil, fmt.Errorf("failed to create AI client: %w", err)
 	}
 
+	var systemPrompt string
+	if isShortCommit {
+		systemPrompt = getShortCommitPrompt()
+	} else {
+		systemPrompt = getDefaultSystemPrompt()
+	}
+
 	return &CommitMessageGenerator{
-		client:       client,
-		config:       config,
-		systemPrompt: getDefaultSystemPrompt(),
+		client:        client,
+		config:        config,
+		systemPrompt:  systemPrompt,
+		isShortCommit: isShortCommit,
 	}, nil
 }
 
@@ -146,6 +155,28 @@ best practices for API authentication.
 
 Match the style and tone of recent commits in the git log.
 Output only the commit message, nothing else.`
+}
+
+// getShortCommitPrompt returns the system prompt for short commit messages
+func getShortCommitPrompt() string {
+	return `You are a git commit message generator. Analyze the provided git diff and create a single-line commit message.
+
+Rules:
+1. Use Conventional Commits format: type(scope): description
+2. Common types: feat, fix, refactor, chore, docs, style, test, perf, ci, build
+3. Keep under 50 characters total
+4. Use imperative mood (e.g., "add feature" not "added feature")
+5. Be concise but descriptive
+6. NO body text, NO explanations, just the subject line
+
+Examples:
+feat(auth): add JWT authentication
+fix(db): resolve connection timeout
+refactor(api): simplify error handling
+docs(readme): update installation steps
+test(user): add login validation tests
+
+Output ONLY the commit subject line, nothing else.`
 }
 
 // getDefaultCommitExamples provides example commit messages when no git history exists

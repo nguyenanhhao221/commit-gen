@@ -74,16 +74,26 @@ git add .
 2. Generate commit message:
 
 ```bash
+# Full commit message (subject + body)
 ./commit-gen
+
+# Short commit message (subject only)
+./commit-gen -short
 ```
 
 3. Use the output for your commit:
 
 ```bash
+# Full commit
 git commit -m "$(./commit-gen)"
+
+# Quick short commit
+git commit -m "$(./commit-gen -short)"
 ```
 
 ### Example Output
+
+**Full commit message** (`./commit-gen`):
 
 ```
 feat(auth): add JWT-based user authentication
@@ -96,6 +106,12 @@ This change enables secure user sessions and replaces the previous
 cookie-based authentication which had security vulnerabilities.
 The new system provides better scalability and follows industry
 best practices for API authentication.
+```
+
+**Short commit message** (`./commit-gen -short`):
+
+```
+feat(auth): add JWT-based user authentication
 ```
 
 ### Using as a Library
@@ -117,12 +133,19 @@ func main() {
     }
     fmt.Println(message)
     
+    // Quick short commit
+    shortMessage, err := commitgen.QuickGenerateShort("your-api-key")
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(shortMessage)
+    
     // Advanced usage
     commitGen, err := commitgen.New(&commitgen.Options{
-        APIKey:       "your-api-key",
-        WorkingDir:   "/path/to/repo",
-        Model:        "gemini-1.5-pro",
-        CustomPrompt: "Your custom prompt here",
+        APIKey:        "your-api-key",
+        WorkingDir:    "/path/to/repo",
+        Model:         "gemini-1.5-pro",
+        IsShortCommit: true, // Generate short commits
     })
     if err != nil {
         log.Fatal(err)

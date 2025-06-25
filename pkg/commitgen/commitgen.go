@@ -22,6 +22,8 @@ type Options struct {
 	APIKey string
 	// Model to use for generation (optional, uses default if empty)
 	Model string
+	// Use short commit format
+	IsShortCommit bool
 }
 
 // New creates a new CommitGen instance
@@ -47,7 +49,7 @@ func New(opts *Options) (*CommitGen, error) {
 	}
 
 	// Create generator
-	generator, err := NewCommitMessageGenerator(config)
+	generator, err := NewCommitMessageGenerator(config, opts.IsShortCommit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create generator: %w", err)
 	}
@@ -116,7 +118,21 @@ func QuickGenerate(apiKey string) (string, error) {
 		return "", err
 	}
 	defer commitGen.Close()
+	
+	return commitGen.Generate()
+}
 
+// QuickGenerateShort is a convenience function for generating short commit messages
+func QuickGenerateShort(apiKey string) (string, error) {
+	commitGen, err := New(&Options{
+		APIKey:        apiKey,
+		IsShortCommit: true,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer commitGen.Close()
+	
 	return commitGen.Generate()
 }
 
@@ -130,4 +146,3 @@ func QuickGenerateWithOptions(opts *Options) (string, error) {
 
 	return commitGen.Generate()
 }
-
