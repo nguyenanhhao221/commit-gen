@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -54,42 +56,25 @@ Output only the commit message, nothing else.`,
 		APIKey:  googleAPIKey,
 		Backend: genai.BackendGeminiAPI,
 	})
-	// Mimic a git diff output as a hardcoded string
-	gitDiff := `diff --git a/main.go b/main.go
-index 83db48f..bf3c5e2 100644
---- a/main.go
-+++ b/main.go
-@@ -10,6 +10,7 @@
- import (
- 	"context"
- 	"fmt"
-+	"time"
- 	"log"
- 	"os"
- 
-@@ -20,6 +21,7 @@
- 	"github.com/joho/godotenv"
- 	"google.golang.org/genai"
- )
-+
- func main() {
- 	err := godotenv.Load()
- 	if err != nil {
- 		log.Println("Error loading .env file, trying to load environment")
- 	}
-+	fmt.Println("Environment loaded")
- 	googleAPIKey := os.Getenv("GOOGLE_API_KEY")
- 	if googleAPIKey == "" {
- 		log.Fatal("GOOGLE_API_KEY environment variable not set")
- 	}
-`
-	// Optionally, mimic a recent git log sample as well
-	gitLog := `feat: add environment variable loading
-fix: handle missing GOOGLE_API_KEY gracefully
-chore: update dependencies
-`
 
-	// Compose the prompt as the model expects
+	// Get git diff (staged changes)
+	gitDiff, err := getGitDiff()
+	if err != nil {
+		log.Fatalf("Failed to get git diff: %v", err)
+	}
+
+	if strings.TrimSpace(gitDiff) == "" {
+		fmt.Println("No staged changes found. Please stage your changes with 'git add' first.")
+		return
+	}
+
+	// Get recent git log (last 5 commits)
+	gitLog, err := getGitLog()
+	if err != nil {
+		log.Fatalf("Failed to get git log: %v", err)
+	}
+
+	// Compose the prompt
 	prompt := fmt.Sprintf(
 		"Recent git log:\n%s\n\nGit diff:\n%s\n",
 		gitLog,
@@ -107,4 +92,24 @@ chore: update dependencies
 	}
 
 	fmt.Println(result.Text())
+}
+
+// getGitDiff executes 'git diff --staged' and returns the output
+func getGitDiff() (string, error) {
+	cmd := exec.Command("git", "--no-pager", "diff", "--staged")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git diff failed: %w", err)
+	}
+	return string(output), nil
+}
+
+// getGitLog executes 'git log --oneline -5' and returns the output
+func getGitLog() (string, error) {
+	cmd := exec.Command("git", "log", "-10")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("git log failed: %w", err)
+	}
+	return string(output), nil
 }
