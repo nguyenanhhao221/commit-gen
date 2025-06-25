@@ -122,7 +122,7 @@ package main
 import (
     "fmt"
     "log"
-    "github.com/nguyenanhhao221/go-google-ai/pkg/commitgen"
+    "github.com/nguyenanhhao221/commit-gen/pkg/commitgen"
 )
 
 func main() {

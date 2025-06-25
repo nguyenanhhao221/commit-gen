@@ -1,4 +1,4 @@
-package commitgen
+package generator
 
 import (
 	"fmt"
@@ -127,4 +127,3 @@ func (g *GitRepository) GetCommitContext() (*GitInfo, error) {
 		HasHistory:    hasHistory,
 	}, nil
 }
-

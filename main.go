@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-	"github.com/nguyenanhhao221/go-google-ai/pkg/commitgen"
+	"github.com/nguyenanhhao221/commit-gen/internal/generator"
 )
 
 func main() {
@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	// Create commit generator
-	commitGen, err := commitgen.New(&commitgen.Options{
+	commitGen, err := generator.New(&generator.Options{
 		IsShortCommit: *shortCommit,
 		// API key will be loaded from GOOGLE_API_KEY environment variable
 		// WorkingDir defaults to current directory

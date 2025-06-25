@@ -1,4 +1,4 @@
-module github.com/nguyenanhhao221/go-google-ai
+module github.com/nguyenanhhao221/commit-gen
 
 go 1.24.4
 
