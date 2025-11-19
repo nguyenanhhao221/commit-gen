@@ -167,7 +167,7 @@ type GeneratorConfig struct {
 // DefaultConfig returns a default configuration
 func DefaultConfig() *GeneratorConfig {
 	return &GeneratorConfig{
-		Model:   "gemini-2.5-flash-lite-preview-06-17", // Fast and Dirty just like we like it
+		Model:   "gemini-2.5-flash-lite", // Fast and Dirty just like we like it
 		Timeout: 10 * time.Second,
 	}
 }
