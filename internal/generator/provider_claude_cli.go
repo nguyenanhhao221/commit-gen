@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+var (
+	lookPathFn       = exec.LookPath
+	commandContextFn = exec.CommandContext
+)
+
 // ClaudeCLIProvider generates content by invoking the local Claude CLI.
 type ClaudeCLIProvider struct {
 	commandPath string
@@ -14,7 +19,7 @@ type ClaudeCLIProvider struct {
 
 // NewClaudeCLIProvider creates a provider backed by the local `claude` executable.
 func NewClaudeCLIProvider() (*ClaudeCLIProvider, error) {
-	path, err := exec.LookPath("claude")
+	path, err := lookPathFn("claude")
 	if err != nil {
 		return nil, fmt.Errorf("claude-cli provider requires `claude` in PATH: %w", err)
 	}
@@ -36,7 +41,7 @@ func (p *ClaudeCLIProvider) Generate(ctx context.Context, req *GenerateRequest) 
 		req.Prompt,
 	}
 
-	cmd := exec.CommandContext(ctx, p.commandPath, args...)
+	cmd := commandContextFn(ctx, p.commandPath, args...)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("claude-cli generation failed: %w: %s", err, strings.TrimSpace(string(output)))
