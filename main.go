@@ -18,12 +18,16 @@ func main() {
 	}
 
 	shortCommit := flag.Bool("short", false, "Just generate short commit title")
+	provider := flag.String("provider", generator.ProviderClaudeCLI, "AI provider to use (claude-cli, gemini)")
+	model := flag.String("model", "", "Model override for selected provider")
 	flag.Parse()
 
 	// Create commit generator
 	commitGen, err := generator.New(&generator.Options{
+		Provider:      *provider,
+		Model:         *model,
 		IsShortCommit: *shortCommit,
-		// API key will be loaded from GOOGLE_API_KEY environment variable
+		// API key is required for gemini provider and loaded from GOOGLE_API_KEY by default
 		// WorkingDir defaults to current directory
 	})
 	if err != nil {

@@ -12,7 +12,11 @@ const defaultProviderTimeout = 10 * time.Second
 func normalizeProvider(provider string) string {
 	value := strings.TrimSpace(strings.ToLower(provider))
 	if value == "" {
-		return ProviderGemini
+		return ProviderClaudeCLI
+	}
+
+	if value == "claude" {
+		return ProviderClaudeCLI
 	}
 
 	return value

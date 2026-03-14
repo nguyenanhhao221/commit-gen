@@ -9,12 +9,11 @@ import (
 
 // CommitGen provides a high-level interface for commit message generation
 type CommitGen struct {
-	provider      AIProvider
-	repo          *GitRepository
-	model         string
-	timeout       time.Duration
-	systemPrompt  string
-	isShortCommit bool
+	provider     AIProvider
+	repo         *GitRepository
+	model        string
+	timeout      time.Duration
+	systemPrompt string
 }
 
 // Options contains configuration options for CommitGen
@@ -52,12 +51,11 @@ func New(opts *Options) (*CommitGen, error) {
 	repo := NewGitRepository(opts.WorkingDir)
 
 	return &CommitGen{
-		provider:      provider,
-		repo:          repo,
-		model:         model,
-		timeout:       timeout,
-		systemPrompt:  systemPrompt,
-		isShortCommit: opts.IsShortCommit,
+		provider:     provider,
+		repo:         repo,
+		model:        model,
+		timeout:      timeout,
+		systemPrompt: systemPrompt,
 	}, nil
 }
 
@@ -126,7 +124,8 @@ func (c *CommitGen) generateFromGitInfo(gitInfo *GitInfo) (string, error) {
 // It creates a CommitGen instance, generates a message, and cleans up
 func QuickGenerate(apiKey string) (string, error) {
 	commitGen, err := New(&Options{
-		APIKey: apiKey,
+		Provider: ProviderGemini,
+		APIKey:   apiKey,
 	})
 	if err != nil {
 		return "", err
@@ -139,6 +138,7 @@ func QuickGenerate(apiKey string) (string, error) {
 // QuickGenerateShort is a convenience function for generating short commit messages
 func QuickGenerateShort(apiKey string) (string, error) {
 	commitGen, err := New(&Options{
+		Provider:      ProviderGemini,
 		APIKey:        apiKey,
 		IsShortCommit: true,
 	})
