@@ -2,20 +2,27 @@
 package generator
 
 import (
+	"context"
 	"fmt"
-	"os"
+	"time"
 )
 
 // CommitGen provides a high-level interface for commit message generation
 type CommitGen struct {
-	generator *CommitMessageGenerator
-	repo      *GitRepository
+	provider      AIProvider
+	repo          *GitRepository
+	model         string
+	timeout       time.Duration
+	systemPrompt  string
+	isShortCommit bool
 }
 
 // Options contains configuration options for CommitGen
 type Options struct {
 	// WorkingDir is the git repository directory (empty for current dir)
 	WorkingDir string
+	// Provider is the AI backend implementation (gemini, claude-cli)
+	Provider string
 	// APIKey for the AI service
 	APIKey string
 	// Model to use for generation (optional, uses default if empty)
@@ -30,34 +37,27 @@ func New(opts *Options) (*CommitGen, error) {
 		opts = &Options{}
 	}
 
-	// Get API key from options or environment
-	apiKey := opts.APIKey
-	if apiKey == "" {
-		apiKey = os.Getenv("GOOGLE_API_KEY")
-	}
-	if apiKey == "" {
-		return nil, fmt.Errorf("API key not provided in options or GOOGLE_API_KEY environment variable")
-	}
-
-	// Set up generator config
-	config := DefaultConfig()
-	config.APIKey = apiKey
-	if opts.Model != "" {
-		config.Model = opts.Model
-	}
-
-	// Create generator
-	generator, err := NewCommitMessageGenerator(config, opts.IsShortCommit)
+	provider, model, timeout, err := createProvider(opts)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create generator: %w", err)
+		return nil, err
 	}
 
-	// Create git repository handler
+	var systemPrompt string
+	if opts.IsShortCommit {
+		systemPrompt = getShortCommitPrompt()
+	} else {
+		systemPrompt = getDefaultSystemPrompt()
+	}
+
 	repo := NewGitRepository(opts.WorkingDir)
 
 	return &CommitGen{
-		generator: generator,
-		repo:      repo,
+		provider:      provider,
+		repo:          repo,
+		model:         model,
+		timeout:       timeout,
+		systemPrompt:  systemPrompt,
+		isShortCommit: opts.IsShortCommit,
 	}, nil
 }
 
@@ -69,13 +69,7 @@ func (c *CommitGen) Generate() (string, error) {
 		return "", err
 	}
 
-	// Generate commit message
-	message, err := c.generator.GenerateCommitMessage(gitInfo)
-	if err != nil {
-		return "", err
-	}
-
-	return message, nil
+	return c.generateFromGitInfo(gitInfo)
 }
 
 // GenerateFromDiff creates a commit message from provided diff and optional history
@@ -87,7 +81,7 @@ func (c *CommitGen) GenerateFromDiff(diff, history string) (string, error) {
 		HasHistory:    history != "",
 	}
 
-	return c.generator.GenerateCommitMessage(gitInfo)
+	return c.generateFromGitInfo(gitInfo)
 }
 
 // HasStagedChanges checks if there are staged changes in the repository
@@ -103,7 +97,29 @@ func (c *CommitGen) GetGitInfo() (*GitInfo, error) {
 
 // Close cleans up resources
 func (c *CommitGen) Close() error {
-	return c.generator.Close()
+	if c.provider == nil {
+		return nil
+	}
+
+	return c.provider.Close()
+}
+
+func (c *CommitGen) generateFromGitInfo(gitInfo *GitInfo) (string, error) {
+	prompt := buildPrompt(gitInfo)
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
+	defer cancel()
+
+	message, err := c.provider.Generate(ctx, &GenerateRequest{
+		Model:        c.model,
+		Prompt:       prompt,
+		SystemPrompt: c.systemPrompt,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to generate commit message: %w", err)
+	}
+
+	return message, nil
 }
 
 // QuickGenerate is a convenience function for simple use cases

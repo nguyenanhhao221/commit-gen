@@ -8,31 +8,33 @@ import (
 	"google.golang.org/genai"
 )
 
-// CommitMessageGenerator handles AI-powered commit message generation.
-type CommitMessageGenerator struct {
-	client        *genai.Client
-	config        *GeneratorConfig
-	systemPrompt  string
-	isShortCommit bool
+// GeminiProvider generates content with the Gemini API.
+type GeminiProvider struct {
+	client *genai.Client
+	config *GeminiConfig
 }
 
-// GeneratorConfig contains configuration for the commit message generator.
-type GeneratorConfig struct {
+// GeminiConfig contains configuration for the Gemini provider.
+type GeminiConfig struct {
 	Model   string
 	Timeout time.Duration
 	APIKey  string
 }
 
-// DefaultConfig returns a default configuration.
-func DefaultConfig() *GeneratorConfig {
-	return &GeneratorConfig{
+// DefaultGeminiConfig returns a default Gemini configuration.
+func DefaultGeminiConfig() *GeminiConfig {
+	return &GeminiConfig{
 		Model:   "gemini-2.5-flash-lite", // Fast and Dirty just like we like it
 		Timeout: 10 * time.Second,
 	}
 }
 
-// NewCommitMessageGenerator creates a new commit message generator.
-func NewCommitMessageGenerator(config *GeneratorConfig, isShortCommit bool) (*CommitMessageGenerator, error) {
+// NewGeminiProvider creates a new Gemini provider.
+func NewGeminiProvider(config *GeminiConfig) (*GeminiProvider, error) {
+	if config == nil {
+		config = DefaultGeminiConfig()
+	}
+
 	if config.APIKey == "" {
 		return nil, fmt.Errorf("API key is required")
 	}
@@ -48,30 +50,29 @@ func NewCommitMessageGenerator(config *GeneratorConfig, isShortCommit bool) (*Co
 		return nil, fmt.Errorf("failed to create AI client: %w", err)
 	}
 
-	var systemPrompt string
-	if isShortCommit {
-		systemPrompt = getShortCommitPrompt()
-	} else {
-		systemPrompt = getDefaultSystemPrompt()
-	}
-
-	return &CommitMessageGenerator{
-		client:        client,
-		config:        config,
-		systemPrompt:  systemPrompt,
-		isShortCommit: isShortCommit,
+	return &GeminiProvider{
+		client: client,
+		config: config,
 	}, nil
 }
 
-// GenerateCommitMessage generates a commit message from git information.
-func (g *CommitMessageGenerator) GenerateCommitMessage(gitInfo *GitInfo) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), g.config.Timeout)
-	defer cancel()
+// Generate requests content generation from Gemini.
+func (g *GeminiProvider) Generate(ctx context.Context, req *GenerateRequest) (string, error) {
+	if req == nil {
+		return "", fmt.Errorf("generation request is required")
+	}
 
-	prompt := buildPrompt(gitInfo)
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	model := req.Model
+	if model == "" {
+		model = g.config.Model
+	}
 
 	genConfig := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(g.systemPrompt, genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(req.SystemPrompt, genai.RoleUser),
 		ThinkingConfig: &genai.ThinkingConfig{
 			IncludeThoughts: false,
 			ThinkingBudget:  func() *int32 { v := int32(0); return &v }(), // Disable thinking
@@ -80,8 +81,8 @@ func (g *CommitMessageGenerator) GenerateCommitMessage(gitInfo *GitInfo) (string
 
 	result, err := g.client.Models.GenerateContent(
 		ctx,
-		g.config.Model,
-		genai.Text(prompt),
+		model,
+		genai.Text(req.Prompt),
 		genConfig,
 	)
 	if err != nil {
@@ -92,6 +93,6 @@ func (g *CommitMessageGenerator) GenerateCommitMessage(gitInfo *GitInfo) (string
 }
 
 // Close cleans up resources.
-func (g *CommitMessageGenerator) Close() error {
+func (g *GeminiProvider) Close() error {
 	return nil
 }
