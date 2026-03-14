@@ -7,6 +7,7 @@ A **core library** and CLI tool for generating intelligent Git commit messages u
 - 🤖 **AI-Powered Analysis**: Uses Google Gemini to understand your code changes
 - 📦 **Core Library**: Clean Go package that can be integrated into any application
 - 🔌 **Multiple Integrations**: CLI tool, IDE plugins, git hooks, or custom applications
+- 🔀 **Provider-Based AI Layer**: Switch between `claude-cli`, `gemini`, and future providers
 - 📝 **Conventional Commits**: Generates properly formatted commit messages following industry standards
 - 🔍 **Context Aware**: Analyzes both your diff and recent git history for consistent style
 - ⚡ **Fast & Lightweight**: Minimal dependencies and clean architecture
@@ -28,7 +29,8 @@ A **core library** and CLI tool for generating intelligent Git commit messages u
 
 - Go 1.24 or later
 - Git repository
-- Google AI API key ([Get one here](https://ai.google.dev/))
+- Claude CLI installed (`claude`) and authenticated
+- Optional: Google AI API key for Gemini provider ([Get one here](https://ai.google.dev/))
 
 ### Setup
 
@@ -45,7 +47,13 @@ cd go-google-ai
 go mod tidy
 ```
 
-3. Set up your Google AI API key:
+3. Authenticate Claude CLI (default provider):
+
+```bash
+claude auth
+```
+
+4. (Optional) Set up your Google AI API key for Gemini usage:
 
 ```bash
 # Option 1: Environment variable
@@ -55,7 +63,7 @@ export GOOGLE_API_KEY="your-api-key-here"
 echo "GOOGLE_API_KEY=your-api-key-here" > .env
 ```
 
-4. Build the binary:
+5. Build the binary:
 
 ```bash
 go build -o commit-gen main.go
@@ -74,11 +82,17 @@ git add .
 2. Generate commit message:
 
 ```bash
-# Full commit message (subject + body)
+# Full commit message (subject + body, default provider: claude-cli)
 ./commit-gen
 
 # Short commit message (subject only)
 ./commit-gen -short
+
+# Explicit Gemini provider
+./commit-gen -provider gemini
+
+# Explicit provider + model override
+./commit-gen -provider claude-cli -model haiku
 ```
 
 3. Use the output for your commit:
@@ -195,7 +209,25 @@ git config --global alias.smart-commit '!git commit -m "$(commit-gen)"'
 
 ## Configuration
 
-The AI prompt is currently embedded in the code but follows these rules:
+### Provider Selection
+
+- Default provider: `claude-cli`
+- Supported providers:
+  - `claude-cli`
+  - `gemini`
+- CLI flags:
+  - `-provider`: choose provider (`claude-cli`, `gemini`)
+  - `-model`: override the provider model
+  - `-short`: generate single-line subject only
+
+### Model Defaults
+
+- `claude-cli`: `haiku`
+- `gemini`: `gemini-2.5-flash-lite`
+
+### Prompt Rules
+
+The AI prompt is provider-agnostic and follows these rules:
 
 - **Subject line**: `type(scope): description` (max 50 chars)
 - **Types**: feat, fix, refactor, chore, docs, style, test, perf, ci, build
@@ -204,7 +236,8 @@ The AI prompt is currently embedded in the code but follows these rules:
 ## Error Handling
 
 - **No staged changes**: The tool will prompt you to stage changes first
-- **No API key**: Clear error message with setup instructions  
+- **Missing Claude CLI**: Clear error if `claude` executable is not found
+- **No Gemini API key**: Clear error when using `-provider gemini` without key
 - **No git history**: Falls back to example commit formats
 - **API timeout**: 10-second timeout prevents hanging
 

@@ -24,7 +24,8 @@ Guidance for coding agents working in `commit-gen`.
 ## Prerequisites
 - Use Go `1.24.4` (or a compatible patch release).
 - Ensure `git` is installed.
-- Set `GOOGLE_API_KEY` via environment or `.env`.
+- Install and authenticate `claude` CLI (default provider).
+- Set `GOOGLE_API_KEY` via environment or `.env` when using `gemini` provider.
 - Run commands from repo root: `/Users/haonguyen/Code/commit-gen`.
 
 ## Build Commands
@@ -68,7 +69,8 @@ No linter config is committed; use Go-native checks first.
 3. `go vet ./...`
 4. `go build ./...`
 5. Smoke test CLI:
-   - `GOOGLE_API_KEY=... go run ./main.go -short`
+	 - `go run ./main.go -short`
+	 - `GOOGLE_API_KEY=... go run ./main.go -provider gemini -short`
 
 ## Code Style Guidelines
 Follow existing patterns in `main.go` and `internal/generator/*.go`.
@@ -141,7 +143,7 @@ Follow existing patterns in `main.go` and `internal/generator/*.go`.
 ## Security and Secrets
 - Never commit `.env` or API keys.
 - Never hardcode credentials in source.
-- Use `GOOGLE_API_KEY` from environment at runtime.
+- Use provider-specific credentials from environment at runtime.
 
 ## Change Scope Guidance
 - Keep changes minimal and task-focused.
@@ -151,6 +153,7 @@ Follow existing patterns in `main.go` and `internal/generator/*.go`.
 ## Quick Command Reference
 - Full verification: `gofmt -w . && go test ./... && go vet ./... && go build ./...`
 - Build binary: `go build -o commit-gen ./main.go`
-- Run binary: `GOOGLE_API_KEY=... ./commit-gen`
-- Run short mode: `GOOGLE_API_KEY=... ./commit-gen -short`
+- Run binary (default claude-cli): `./commit-gen`
+- Run short mode (default claude-cli): `./commit-gen -short`
+- Run gemini provider: `GOOGLE_API_KEY=... ./commit-gen -provider gemini`
 - Single test: `go test ./... -run '^TestName$' -v`
