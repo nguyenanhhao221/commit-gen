@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const defaultProviderTimeout = 10 * time.Second
+const defaultProviderTimeout = 20 * time.Second
 
 func normalizeProvider(provider string) string {
 	value := strings.TrimSpace(strings.ToLower(provider))
